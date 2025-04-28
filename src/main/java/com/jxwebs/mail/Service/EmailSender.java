@@ -10,9 +10,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class EmailSender {
@@ -55,15 +53,14 @@ public class EmailSender {
         }
     }
 
-    private String checkDomainCorrect(String to){
-        String emailHandle = to.toLowerCase();
+    private String checkDomainCorrect(String emailCheck){
+        String emailHandle = emailCheck.toLowerCase();
         String[] parts = emailHandle.split("@");
         String domain = parts[1];
         if(DOMAIN_MAP.containsKey(domain)){
             domain = DOMAIN_MAP.get(domain);
-            System.out.println(domain);
-            to = parts[0]+"@"+domain;
-            return to;
+            emailCheck = parts[0]+"@"+domain;
+            return emailCheck;
         }else {
             return null;
         }
@@ -72,12 +69,23 @@ public class EmailSender {
     public String sendEmail( String to , String[] cc , String  title , String  content , MultipartFile file ) {
         try {
 
-            String toISCheck = checkDomainCorrect(to); // 檢查收件人電子郵件是否 正確 or 有支援
-            if (toISCheck == null){
+            String toIsCheck = checkDomainCorrect(to); // 檢查收件人電子郵件是否 正確 or 有支援
+            if (toIsCheck == null){
                 return "電子信箱找不到 or 不支援";
             }
 
-            MimeMessage email = emailMaker( toISCheck , cc , title , content , file ); // 組信
+            List<String> ccArrayList = new ArrayList<>(); // 移除 cc 電子郵件是否 正確 or 有支援
+            if (cc != null){
+                for (String ccCheck : cc ){
+                    String result = checkDomainCorrect(ccCheck);
+                    if (result != null){
+                        ccArrayList.add(result);
+                    }
+                }
+            }
+            String[] ccIsCheck = ccArrayList.toArray(new String[0]);
+
+            MimeMessage email = emailMaker( toIsCheck , ccIsCheck , title , content , file ); // 組信
             if (email != null ){
                 mailSender.send(email); // 發信
                 return "寄送成功";
